@@ -23,7 +23,7 @@ class PullRequestMatcher:
     repo : str
 
     def __init__(self,csv_path : str, repo : str):
-        self.out_csv = csv_path.replace('.csv','_result.csv')
+        self.out_csv = csv_path.replace('.csv',repo.replace("/","_")+'_result.csv')
         self.repo = repo
         self.init_student_list_from_csv(csv_path)
         self.fetch_pull_requests()
@@ -105,11 +105,26 @@ class PullRequestMatcher:
             writer = csv.writer(file)
             for student in self.students:
                 writer.writerow([student.last_name,student.first_name,student.pull_request])
+    def print_unafected_pr(self):
+        missing_pr = [pr for pr in self.pull_request if len([student for student in self.students if pr.html_url == student.pull_request])==0 ]
+        for pr in missing_pr :
+            print("Unnafected pr : "+pr.html_url+" "+pr.title)
+    def print_affected_to_one_student_pr(self):
+        missing_pr = [pr for pr in self.pull_request if len([student for student in self.students if pr.html_url == student.pull_request])<=1 ]
+        for pr in missing_pr :
+            print("check this affected to less than two student pr : "+pr.html_url+" "+pr.title)
+    def print_affected_to_more_than_two_student_pr(self):
+        missing_pr = [pr for pr in self.pull_request if len([student for student in self.students if pr.html_url == student.pull_request])>2 ]
+        for pr in missing_pr :
+            print("check this affected to more than two student pr : "+pr.html_url+" "+pr.title)
 
 def main(args):
     matcher :PullRequestMatcher = PullRequestMatcher(args.csv_path,args.repo)
     matcher.match()
     matcher.export_to_csv()
+    matcher.print_unafected_pr()
+    matcher.print_affected_to_one_student_pr()
+    matcher.print_affected_to_more_than_two_student_pr()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Fetch GitHub pull requests containing first name and last name from a CSV file and save the results to a new CSV file.')
